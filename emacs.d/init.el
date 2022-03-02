@@ -1,16 +1,24 @@
+;; Fix colors for st terminal
+(defun terminal-init-st ()
+  "Terminal initialization function for st-terminal."
+  (tty-run-terminal-initialization (selected-frame) "screen-256color"))
+
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
 (package-initialize)
+
+;; Ensure `use-package' is installed.
+(unless (package-installed-p 'use-package)
+  (progn (package-refresh-contents)
+                 (package-install 'use-package)))
+
+(use-package try
+  :commands try)
+
 (elpy-enable)
 
 (setq sml/theme 'dark)
 (sml/setup)
-
-(require 'smartparens-config)
-(add-hook 'c-mode-hook #'smartparens-mode)
-(add-hook 'js-mode-hook #'smartparens-mode)
-(add-hook 'python-mode-hook #'smartparens-mode)
-
 
 (add-hook 'python-mode-hook 'eldoc-mode)
 (setq elpy-rpc-backend "jedi")
@@ -63,3 +71,29 @@
 (global-set-key (kbd "C-x l") 'counsel-locate)
 (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
 (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
+
+(use-package smartparens
+  :hook (lua-mode c-mode java-mode LilyPond-mode emacs-lisp-mode python-mode)
+  :bind ("C-M-d" . sp-kill-sexp)
+  :config
+  (defalias 'smartparens 'smartparens-mode)
+  (sp-with-modes '(c-mode c++-mode)
+    (sp-local-pair "{" nil :post-handlers '(("||\n[i]" "RET"))))
+  (show-smartparens-global-mode)
+  :custom
+  (sp-autoskip-closing-pair t)
+  (sp-autodelete-closing-pair t)
+  (sp-highlight-pair-overlay nil))
+
+(use-package auto-highlight-symbol
+  :defer 1
+  :config (global-auto-highlight-symbol-mode t)
+  :custom (ahs-inhibit-face-list nil "Highlight everything"))
+
+(use-package linum-relative
+  :defer 0.2
+  :config
+  (linum-relative-global-mode t)
+  :custom
+  (linum-relative-current-symbol ""))
+
