@@ -6,7 +6,10 @@
 (menu-bar-mode -1)
 (toggle-scroll-bar -1)
 (tool-bar-mode -1)
-;;(setq frame-background-mode 'dark)
+
+(use-package visual-regexp
+  :config (define-key global-map (kbd "M-%")
+	    (lambda (&optional prefix) (interactive "P") (call-interactively (if prefix  #'vr/replace #'vr/query-replace)))))
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "http://melpa.org/packages/") t)
@@ -15,7 +18,8 @@
 ;; Ensure `use-package' is installed.
 (unless (package-installed-p 'use-package)
   (progn (package-refresh-contents)
-                 (package-install 'use-package)))
+		 (package-install 'use-package)))
+
 
 (use-package try
   :commands try)
@@ -37,7 +41,7 @@
 (add-hook 'python-mode-hook #'lsp)
 
 (global-set-key [f8] 'neotree-toggle)
-(setq neo-theme (if (display-graphic-p) 'icons 'arrow))    
+(setq neo-theme (if (display-graphic-p) 'icons 'arrow))
 
 (use-package undo-tree
   :diminish                       ;; Don't show an icon in the modeline
@@ -69,7 +73,7 @@
 
 (when (fboundp 'windmove-default-keybindings)
   (windmove-default-keybindings))
-    
+
 (global-set-key "\C-h" 'delete-backward-char)
 
 (ivy-mode)
@@ -133,8 +137,8 @@
 
    ;; Show candidates according to importance, then case, then in-buffer frequency
    company-transformers '(company-sort-by-backend-importance
-                          company-sort-prefer-same-case-prefix
-                          company-sort-by-occurrence)
+			  company-sort-prefer-same-case-prefix
+			  company-sort-by-occurrence)
 
    ;; Flushright any annotations for a compleition;
    ;; e.g., the description of what a snippet template word expands into.
@@ -168,9 +172,50 @@
 
   ;; Bindings when the company list is active.
   :bind (:map company-active-map
-              ("C-d" . company-show-doc-buffer) ;; In new temp buffer
-              ("<tab>" . company-complete-selection)
-              ;; Use C-n,p for navigation in addition to M-n,p
-              ("C-n" . (lambda () (interactive) (company-complete-common-or-cycle 1)))
-              ("C-p" . (lambda () (interactive) (company-complete-common-or-cycle -1)))))
+	      ("C-d" . company-show-doc-buffer) ;; In new temp buffer
+	      ("<tab>" . company-complete-selection)
+	      ;; Use C-n,p for navigation in addition to M-n,p
+	      ("C-n" . (lambda () (interactive) (company-complete-common-or-cycle 1)))
+	      ("C-p" . (lambda () (interactive) (company-complete-common-or-cycle -1)))))
 
+(use-package company-emoji
+  :config (add-to-list 'company-backends 'company-emoji))
+
+;; Yet another snippet extension program
+(use-package yasnippet
+  :diminish yas-minor-mode
+  :config
+    (yas-global-mode 1) ;; Always have this on for when using yasnippet syntax within yankpad
+    ;; respect the spacing in my snippet declarations
+    (setq yas-indent-line 'fixed))
+;; Let's use an improved buffer list.
+(use-package ibuffer ;; This is built-into Emacs.
+  :bind ("C-x C-b" . ibuffer))
+;; It uses similar commands as does dired; e.g.,
+;; / . org
+;; This filters (“/”) the list with extensions (“.”) being “org”.
+
+(use-package ibuffer-vc
+  :hook (ibuffer . (lambda ()
+		     (ibuffer-vc-set-filter-groups-by-vc-root)
+		     (unless (eq ibuffer-sorting-mode 'alphabetic)
+		       (ibuffer-do-sort-by-alphabetic))))
+  :custom
+  (ibuffer-formats '((mark modified read-only " "
+			   (name 18 18 :left :elide) " "
+			   (size 9 -1 :right) " "
+			   (mode 16 16 :left :elide) " "
+			   (vc-status 16 16 :left) " "
+			   (vc-relative-file)))))
+
+;; When we split open a new window, we usually want to jump to the new window.
+(advice-add #'split-window-below :after (lambda (&rest _) (other-window 1)))
+(advice-add #'split-window-right :after (lambda (&rest _) (other-window 1)))
+
+;; Add a visual indent guide
+(use-package highlight-indent-guides
+  :hook (prog-mode . highlight-indent-guides-mode)
+  :custom
+  (highlight-indent-guides-method 'character)
+  (highlight-indent-guides-character ?|)
+  (highlight-indent-guides-responsive 'stack))
